@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Экзамен по Python — темы 1–10</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
+<script src="https://cdn.jsdelivr.net/pyodide/v0.26.2/full/pyodide.js"></script>
+<style>
+:root {
+  --ink: #1b1f24;
+  --muted: #5b6470;
+  --line: #e3e6ea;
+  --accent: #2f6f5e;
+  --accent-soft: #eaf3f0;
+  --code-bg: #1d2330;
+  --code-text: #e8ecf3;
+  --green: #1f8a4c;
+  --green-soft: #e8f7ee;
+  --red: #c43d3d;
+  --red-soft: #fdeceb;
+  --amber: #b9790a;
+  --amber-soft: #fdf3e7;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: #ffffff;
+  color: var(--ink);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  line-height: 1.6;
+}
+.app-shell { max-width: 720px; margin: 0 auto; padding: 32px 20px 80px; }
+code, pre { font-family: "SF Mono", "Cascadia Code", Consolas, Monaco, monospace; }
+code.inline { background: var(--accent-soft); color: #1d4d40; padding: 1px 6px; border-radius: 4px; font-size: 0.92em; }
+pre { background: var(--code-bg); color: var(--code-text); padding: 12px 14px; border-radius: 10px; overflow-x: auto; font-size: 13.5px; line-height: 1.5; margin: 8px 0; }
+
+.center-card {
+  max-width: 420px; margin: 60px auto; text-align: center;
+  border: 1px solid var(--line); border-radius: 14px; padding: 32px 28px;
+}
+.center-card h1 { font-size: 22px; margin: 0 0 8px; }
+.center-card p { color: var(--muted); font-size: 14.5px; margin: 0 0 20px; }
+.center-card input {
+  width: 100%; padding: 11px 14px; border: 1px solid var(--line); border-radius: 8px;
+  font-size: 15px; margin-bottom: 14px; font-family: inherit;
+}
+
+.btn {
+  display: inline-block; border: none; border-radius: 8px; padding: 11px 20px;
+  font-size: 14.5px; font-weight: 600; cursor: pointer; font-family: inherit;
+}
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover { background: #265c4d; }
+.btn-primary:disabled { background: #b8c4c0; cursor: not-allowed; }
+.btn-secondary { background: #fff; color: var(--ink); border: 1px solid var(--line); }
+.btn-secondary:hover { background: #fafbfc; }
+.btn-row { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
+
+.progress-wrap { margin-bottom: 28px; }
+.progress-track { height: 6px; background: var(--accent-soft); border-radius: 99px; overflow: hidden; }
+.progress-fill { height: 100%; background: var(--accent); border-radius: 99px; transition: width .3s; }
+.progress-label { font-size: 12.5px; color: var(--muted); margin-top: 8px; display: flex; justify-content: space-between; }
+
+.topic-banner {
+  display: inline-block; font-size: 12.5px; letter-spacing: 0.03em; text-transform: uppercase;
+  color: var(--accent); background: var(--accent-soft); padding: 4px 10px; border-radius: 6px; margin-bottom: 14px;
+}
+.step-card { border: 1px solid var(--line); border-radius: 14px; padding: 24px 26px; }
+.question-text { font-size: 16.5px; margin-bottom: 16px; }
+
+.mcq-option {
+  display: block; width: 100%; text-align: left; padding: 12px 16px; margin-bottom: 10px;
+  border: 1px solid var(--line); border-radius: 10px; background: #fff; font-size: 14.5px;
+  cursor: pointer; font-family: inherit; color: var(--ink); transition: background .15s, border-color .15s;
+}
+.mcq-option:hover:not(:disabled) { border-color: var(--accent); background: var(--accent-soft); }
+.mcq-option:disabled { cursor: not-allowed; }
+.mcq-option.correct { border-color: var(--green); background: var(--green-soft); font-weight: 600; }
+.mcq-option.incorrect { border-color: var(--red); background: var(--red-soft); font-weight: 600; }
+.mcq-option.dimmed { opacity: 0.55; }
+
+.feedback-box { margin-top: 14px; padding: 14px 16px; border-radius: 10px; font-size: 14.5px; }
+.feedback-box.correct { background: var(--green-soft); border-left: 3px solid var(--green); }
+.feedback-box.incorrect { background: var(--red-soft); border-left: 3px solid var(--red); }
+.feedback-box .fb-title { font-weight: 700; margin-bottom: 6px; }
+
+.task-text { font-size: 15.5px; margin-bottom: 14px; }
+textarea.code-editor {
+  width: 100%; min-height: 170px; background: var(--code-bg); color: var(--code-text);
+  font-family: "SF Mono", "Cascadia Code", Consolas, Monaco, monospace; font-size: 14px;
+  border: none; border-radius: 10px; padding: 14px 16px; resize: vertical; line-height: 1.5;
+}
+.task-controls { display: flex; align-items: center; gap: 10px; margin-top: 12px; }
+.task-status { font-size: 13.5px; color: var(--muted); }
+.output-box { margin-top: 12px; }
+.output-box .label { font-size: 11.5px; text-transform: uppercase; color: var(--muted); letter-spacing: 0.03em; margin-bottom: 4px; }
+
+.score-hero { text-align: center; padding: 36px 0 10px; }
+.score-hero .big { font-size: 52px; font-weight: 800; color: var(--accent); }
+.score-hero .sub { color: var(--muted); font-size: 15px; margin-top: 6px; }
+.score-breakdown { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 28px 0; }
+.score-breakdown .cell { border: 1px solid var(--line); border-radius: 10px; padding: 16px; text-align: center; }
+.score-breakdown .cell .num { font-size: 26px; font-weight: 700; }
+.score-breakdown .cell .lab { font-size: 12.5px; color: var(--muted); margin-top: 4px; }
+
+.loading-note { text-align: center; color: var(--muted); font-size: 14px; padding: 30px 0; }
+</style>
+</head>
+<body>
+<div class="app-shell" id="app"></div>
+
+<script>
+const QUIZ_DATA = {"test1": [{"num": 1, "title": "Переменные и типы данных", "theory": [{"q": "Что выведет код?<pre>x = 42\nprint(type(x))</pre>", "options": ["<class 'int'>", "<class 'bool'>", "<class 'float'>", "<class 'str'>"], "correct": 0, "explain": "Функция <code class='inline'>type()</code> возвращает класс значения переменной. Здесь это <code class='inline'><class 'int'></code>."}, {"q": "Что выведет <code class='inline'>print(int(7.8))</code>?", "options": ["7", "0", "7.8", "8"], "correct": 0, "explain": "<code class='inline'>int()</code> при преобразовании float не округляет, а отбрасывает дробную часть (округление к нулю), поэтому 7.8 → 7, а не округлённое значение."}, {"q": "Что выведет код?<pre>print(str(5) + str(3))</pre>", "options": ["8", "53", "35", "Ошибка: TypeError"], "correct": 1, "explain": "Оба числа превращены в строки функцией <code class='inline'>str()</code>, а оператор <code class='inline'>+</code> между строками склеивает их (конкатенация), а не складывает как числа: получится \"53\", а не 8."}], "tasks": [{"text": "Возраст хранится как строка: <code class='inline'>age_str = \"15\"</code>. Преобразуй в число и выведи результат после прибавления 10.", "expected": "25"}, {"text": "Два результата теста — строки: <code class='inline'>score1 = \"78\"</code>, <code class='inline'>score2 = \"85\"</code>. Посчитай средний балл и выведи его с одним знаком после запятой через f-строку (формат: «Средний балл: X.X»).", "expected": "Средний балл: 81.5"}]}, {"num": 2, "title": "Условия: if / elif / else", "theory": [{"q": "Что выведет код?<pre>a, b = 7, 7\nprint(a == b, a != b, a < b)</pre>", "options": ["False False False", "False True False", "True True False", "True False False"], "correct": 3, "explain": "Операторы сравнения (==, !=, <) всегда возвращают True или False, а не число."}, {"q": "В чём разница между цепочкой <code class='inline'>if / elif / else</code> и несколькими отдельными <code class='inline'>if</code> подряд?", "options": ["Выполнится только первый истинный блок, остальные elif/else проверяться не будут.", "Выполнятся все блоки, условия которых истинны, даже если их несколько.", "Python выполнит только последний блок цепочки, независимо от условий.", "elif работает только если перед ним нет ни одного if."], "correct": 0, "explain": "В цепочке if/elif/else выполнится только первый блок, условие которого оказалось истинным — остальные не проверяются. А отдельные if проверяются независимо, и сработать может несколько сразу."}, {"q": "Что выведет код?<pre>p, q = True, False\nprint(p and q, p or q)</pre>", "options": ["True False", "True True", "False False", "False True"], "correct": 3, "explain": "and возвращает True только если оба значения истинны, or — если истинно хотя бы одно."}], "tasks": [{"text": "У ученика результат теста <code class='inline'>score = 85</code>. Шкала: 90+ → \"A\", 75–89 → \"B\", 60–74 → \"C\", меньше 60 → \"F\". Выведи букву оценки.", "expected": "B"}, {"text": "Даны стороны треугольника <code class='inline'>a, b, c = 3, 3, 3</code>. Выведи тип: \"равносторонний\" (все стороны равны), \"равнобедренный\" (любые две равны) или \"произвольный\".", "expected": "равносторонний"}]}, {"num": 3, "title": "Циклы: for и while", "theory": [{"q": "Что выведет код?<pre>for i in range(1, 6):\n    print(i, end=\" \")</pre>", "options": ["1 2 3 4 5", "2 3 4 5 6", "1 2 3 4 5 6", "Ошибка: TypeError"], "correct": 0, "explain": "range(start, stop, step) генерирует числа от start до stop не включая stop, с заданным шагом."}, {"q": "Когда лучше использовать <code class='inline'>for</code>, а когда <code class='inline'>while</code>?", "options": ["while можно использовать только с числами, а for — только со списками.", "for — когда известно количество повторений или есть последовательность; while — когда условие остановки не привязано к конкретному числу шагов.", "for всегда быстрее while, поэтому while почти не используют.", "Разницы нет, это два равноценных способа написать один и тот же цикл в любой ситуации."], "correct": 1, "explain": "for используют для известного числа повторений или перебора последовательности; while — когда число шагов вперёд не известно и зависит от условия."}, {"q": "Сколько раз выполнится тело цикла?<pre>count = 1\nsteps = 0\nwhile count < 4:\n    count += 1\n    steps += 1\nprint(steps)</pre>", "options": ["4", "2", "Ошибка: TypeError", "3"], "correct": 3, "explain": "Тело выполнится 3 раз — ровно столько, сколько нужно, чтобы count дошёл от 1 до 4."}], "tasks": [{"text": "Напиши код, который вычисляет сумму всех чисел от 1 до 10 включительно с помощью цикла, и выводит результат.", "expected": "55"}, {"text": "Напиши код, который выводит первые 8 чисел последовательности Фибоначчи (0, 1, 1, 2, 3, ...) через пробел, используя <code class='inline'>while</code>.", "expected": "0 1 1 2 3 5 8 13"}]}, {"num": 4, "title": "Списки (list)", "theory": [{"q": "Что выведет код?<pre>data = [10, 20, 30, 40, 50]\nprint(data[1:3])</pre>", "options": ["[50, 40]", "[10, 20, 30, 40, 50]", "[20, 30]", "[10, 40]"], "correct": 2, "explain": "Срез [1:3] возвращает новый список с элементами по указанным индексам, не включая правую границу."}, {"q": "Чем отличается <code class='inline'>append()</code> от <code class='inline'>extend()</code>?", "options": ["append добавляет элемент в начало списка, а extend — в конец.", "Это два названия одного и того же метода, они работают идентично в любой ситуации.", "append(x) добавляет x как один элемент целиком; extend(iterable) добавляет каждый элемент последовательности по отдельности.", "extend можно использовать только со строками, а append — только с числами."], "correct": 2, "explain": "append(x) добавляет x целиком как один элемент (даже список — вложенным). extend(iterable) добавляет каждый элемент по отдельности."}, {"q": "Что выведет код?<pre>numbers = [5, 1, 4]\nnumbers.append(100)\nnumbers.insert(0, -1)\nprint(numbers)</pre>", "options": ["[-1, 5, 1, 4, 100]", "Ошибка: TypeError", "[100, 5, 1, 4, -1]", "[5, 1, 4, 100, -1]"], "correct": 0, "explain": "append() добавляет элемент в конец, а insert(0, x) вставляет элемент на конкретную позицию — здесь в начало."}], "tasks": [{"text": "Дан список оценок <code class='inline'>grades = [78, 92, 65, 88, 71]</code>. Выведи максимальную, минимальную оценку и средний балл (через пробел, в одной строке, как делает print с тремя аргументами).", "expected": "92 65 78.8"}, {"text": "Дан список чисел <code class='inline'>numbers = [3, 8, 1, 14, 7, 22, 5]</code>. Выведи список только чётных чисел (отдельной строкой), а затем — сколько их.", "expected": "[8, 14, 22]\n3"}]}, {"num": 5, "title": "Функции", "theory": [{"q": "Что выведет код?<pre>def greet(name=\"Гость\"):\n    return f\"Привет, {name}!\"\n\nprint(greet())\nprint(greet(\"Алия\"))</pre>", "options": ["Привет, Гость!\nПривет, Алия!", "Привет, Алия!\nПривет, Алия!", "Ошибка: greet() missing 1 required positional argument", "Привет, Гость!\nПривет, Гость!"], "correct": 0, "explain": "Если аргумент не передан, используется значение по умолчанию (\"Гость\"), а если передан — оно подставляется вместо него."}, {"q": "В чём разница между <code class='inline'>return</code> и <code class='inline'>print()</code> внутри функции?", "options": ["print завершает выполнение функции, а return просто выводит текст на экран.", "Это одно и то же — return и print можно использовать взаимозаменяемо в любом случае.", "print() просто выводит текст и не передаёт значение дальше в код; return передаёт значение туда, откуда функция была вызвана.", "return можно использовать только в функциях без параметров."], "correct": 2, "explain": "print() выводит текст на экран и не передаёт значение дальше. return завершает функцию и передаёт значение туда, откуда она была вызвана."}, {"q": "Что произойдёт, если в функции нет оператора <code class='inline'>return</code>, и мы выводим результат её вызова?", "options": ["Программа завершится с ошибкой, потому что return обязателен.", "Функция вернёт последнее вычисленное внутри неё значение, даже без return.", "Функция вернёт None — это значение Python возвращает по умолчанию, если в функции явно не указано, что возвращать.", "Функция вернёт 0, как и любая другая функция без явного return."], "correct": 2, "explain": "Без явного return функция возвращает None — специальное значение «ничего» в Python."}], "tasks": [{"text": "Напиши функцию <code class='inline'>total_cost(price, quantity, discount_from=3)</code>, которая считает стоимость покупки и применяет скидку 10%, если количество ≥ <code class='inline'>discount_from</code>. Вызови с <code class='inline'>price=2500, quantity=3</code> и выведи результат.", "expected": "6750.0"}, {"text": "Напиши функцию <code class='inline'>stats(numbers)</code>, возвращающую сумму, максимум и минимум списка, и функцию <code class='inline'>describe(numbers)</code>, которая вызывает <code class='inline'>stats</code> и возвращает строку с этими значениями в формате «Сумма: X, макс: Y, мин: Z». Вызови <code class='inline'>describe([4, 8, 15, 16, 23, 42])</code> и выведи результат.", "expected": "Сумма: 108, макс: 42, мин: 4"}]}, {"num": 6, "title": "Строки и методы строк", "theory": [{"q": "Что выведет код?<pre>s = \"  Python это Просто  \"\nprint(s.strip().lower())</pre>", "options": ["PYTHON ЭТО ПРОСТО", "python это просто", "Python это Просто", "  python это просто  "], "correct": 1, "explain": "strip() убирает пробелы по краям строки, а lower() переводит буквы в нижний регистр."}, {"q": "Можно ли изменить отдельный символ в строке через индекс, например <code class='inline'>s[0] = \"A\"</code>?", "options": ["Можно, но только для первого символа строки, остальные менять нельзя.", "Да, через s[0] = \"A\" можно заменить любой символ строки напрямую.", "Нет — строки неизменяемы (immutable), любая «модификация» создаёт новую строку, а не меняет исходную.", "Можно, если строка была создана через одинарные кавычки, а не двойные."], "correct": 2, "explain": "Строки в Python неизменяемы. Любая операция «изменения» строки создаёт новую строку."}, {"q": "Что выведет код?<pre>words = ['раз', 'два', 'три']\nresult = \"-\".join(words)\nprint(result)\nprint(result.split(\"-\"))</pre>", "options": ["раз-два-три\n['раз', 'два', 'три']", "Ошибка: TypeError", "Ошибка: AttributeError", "раз два три\n['раз', 'два', 'три']"], "correct": 0, "explain": "join() склеивает список строк через разделитель, а split() делает обратное — разбивает строку на список по разделителю."}], "tasks": [{"text": "Дано предложение <code class='inline'>text = \"Питон отличный язык программирования для начинающих\"</code>. Раздели на слова и выведи количество слов (отдельной строкой), а затем — последнее слово.", "expected": "6\nначинающих"}, {"text": "Дано слово <code class='inline'>word = \"программирование\"</code>. Посчитай и выведи, сколько в нём гласных букв (а, е, ё, и, о, у, ы, э, ю, я), перебирая буквы циклом.", "expected": "7"}]}, {"num": 7, "title": "Словари (dict)", "theory": [{"q": "Что выведет код?<pre>prices = {'яблоко': 450, 'банан': 320}\nprint(prices.get(\"груша\", \"нет в наличии\"))</pre>", "options": ["0", "нет в наличии", "Ошибка: KeyError", "None"], "correct": 1, "explain": "Метод .get(key, default) возвращает значение по ключу, а если ключа нет — возвращает default вместо ошибки KeyError."}, {"q": "Когда лучше использовать словарь, а когда список?", "options": ["Словарь всегда быстрее списка, поэтому список почти не используют.", "Список можно использовать только с числами, а словарь — только со строками.", "Разницы нет, это два названия одной и той же структуры данных.", "Список — когда важен порядок и доступ по числовому индексу; словарь — когда у значений есть смысловой ключ и нужен быстрый доступ по нему."], "correct": 3, "explain": "Список — порядок и доступ по индексу. Словарь — доступ по смысловому ключу."}, {"q": "Что произойдёт, если присвоить значение по уже существующему ключу: <code class='inline'>d[\"x\"]=1</code>, потом <code class='inline'>d[\"x\"]=2</code>?", "options": ["Python вызовет ошибку KeyError при попытке присвоить значение уже существующему ключу.", "Словарь автоматически переименует второй ключ, добавив к нему цифру.", "Появится два значения по одному ключу, и оба будут доступны одновременно.", "Старое значение будет перезаписано новым — каждый ключ в словаре уникален."], "correct": 3, "explain": "Ключи в словаре уникальны — повторное присваивание просто заменяет старое значение."}], "tasks": [{"text": "Дан словарь <code class='inline'>scores = {'Айгерим': 88, 'Бекзат': 72, 'Дамир': 95}</code>. Перебери его и выведи построчно: имя, дефис, балл (например, «Имя - 88»).", "expected": "Айгерим - 88\nБекзат - 72\nДамир - 95"}, {"text": "Дан список <code class='inline'>words = ['кот', 'пёс', 'кот', 'хомяк', 'кот', 'пёс']</code>. Посчитай, сколько раз встречается каждое слово, используя словарь как счётчик, и выведи итоговый словарь.", "expected": "{'кот': 3, 'пёс': 2, 'хомяк': 1}"}]}, {"num": 8, "title": "Множества (set)", "theory": [{"q": "Что выведет код?<pre>a = set([1, 2, 3, 4])\nb = set([3, 4, 5, 6])\nprint(a & b)\nprint(a | b)\nprint(a - b)</pre>", "options": ["{3, 4}\n{1, 2, 3, 4, 5, 6}\n{5, 6}", "{1, 2, 3, 4, 5, 6}\n{3, 4}\n{1, 2}", "{1, 2}\n{1, 2, 3, 4, 5, 6}\n{3, 4}", "{3, 4}\n{1, 2, 3, 4, 5, 6}\n{1, 2}"], "correct": 3, "explain": "& — пересечение, | — объединение, - — разность (элементы первого множества, которых нет во втором)."}, {"q": "Почему в множестве (set) не бывает повторов и нет гарантированного порядка?", "options": ["Set основан на хеш-таблице: дубликаты при добавлении просто не добавляются, а элементы хранятся по хешу, а не по порядку вставки.", "Set работает как список, просто Python переименовал тип для удобства.", "Set удаляет дубликаты только если они стоят подряд друг за другом.", "Set всегда сортирует элементы по возрастанию, поэтому порядок предсказуем."], "correct": 0, "explain": "Set основан на хеш-таблице — дубликаты не добавляются, а порядок не привязан к вставке."}, {"q": "Что выведет <code class='inline'>print(len(set([1, 1, 2, 2, 3])))</code>?", "options": ["2 — set оставляет только два первых уникальных элемента.", "5 — set сохраняет исходную длину списка.", "Ошибка: TypeError.", "3 — при преобразовании списка в множество дубликаты убираются, остаются только уникальные значения."], "correct": 3, "explain": "Дубликаты убираются, остаются 1, 2, 3 — то есть 3 уникальных значения."}], "tasks": [{"text": "Дан список с повторами <code class='inline'>numbers = [1, 2, 2, 3, 4, 4, 4, 5]</code>. Выведи отсортированный список уникальных значений (<code class='inline'>sorted(...)</code>), а затем — их количество.", "expected": "[1, 2, 3, 4, 5]\n5"}, {"text": "Группа A: <code class='inline'>group_a = ['Айгерим', 'Бекзат', 'Дамир']</code>, группа B: <code class='inline'>group_b = ['Бекзат', 'Сара', 'Дамир']</code>. Выведи отсортированный список тех, кто состоит в обеих группах, а затем — отсортированный список тех, кто состоит только в группе A.", "expected": "['Бекзат', 'Дамир']\n['Айгерим']"}]}, {"num": 9, "title": "Кортежи (tuple)", "theory": [{"q": "Что выведет код?<pre>point = (3, 7)\nx, y = point\nprint(x + y)</pre>", "options": ["10", "3", "7", "21"], "correct": 0, "explain": "Кортеж распаковывается в переменные x, y по порядку, поэтому x=3, y=7, и x+y=10."}, {"q": "Почему кортеж (tuple) называют неизменяемым, и когда это удобно?", "options": ["После создания кортеж нельзя изменить — это защищает данные от случайной модификации, и кортежи можно использовать как ключи словаря.", "Кортежи на самом деле изменяемы, просто синтаксис изменения отличается от списков.", "Кортеж — это просто список, но с круглыми скобками вместо квадратных, никакой реальной разницы нет.", "Кортежи нужны только для хранения чисел, со строками они не работают."], "correct": 0, "explain": "Кортеж нельзя изменить после создания — это защищает данные и позволяет использовать его как ключ словаря."}, {"q": "Что выведет <code class='inline'>print((1, 2, 3)[1:])</code>?", "options": ["[2, 3] — срез превращает кортеж в список.", "Ошибка: TypeError, кортежи не поддерживают срезы.", "(1, 2, 3) — срез возвращает исходный кортеж без изменений.", "(2, 3) — срез возвращает кортеж с элементами по тем же правилам, что и срезы списков."], "correct": 3, "explain": "Срезы у кортежей работают как у списков, но результат остаётся кортежем."}], "tasks": [{"text": "Дан список кортежей <code class='inline'>students = [('Айгерим', 17, '10A'), ('Бекзат', 16, '9B'), ('Дамир', 18, '11A')]</code> (имя, возраст, группа). Выведи для каждого студента строку вида «Имя, возраст лет, группа Группа».", "expected": "Айгерим, 17 лет, группа 10A\nБекзат, 16 лет, группа 9B\nДамир, 18 лет, группа 11A"}, {"text": "Дан список точек-кортежей <code class='inline'>points = [(0, 0), (3, 4), (1, 1)]</code>. Посчитай расстояние от начала координат до каждой точки (<code class='inline'>(x**2+y**2)**0.5</code>), выведи список расстояний, а затем — самое большое.", "expected": "[0.0, 5.0, 1.4142135623730951]\n5.0"}]}, {"num": 10, "title": "Генераторы списков", "theory": [{"q": "Что выведет код?<pre>numbers = [1, 2, 3, 4, 5]\nsquares = [n ** 2 for n in numbers]\nprint(squares)</pre>", "options": ["[2, 4, 6, 8, 10]", "[1, 2, 3, 4, 5]", "[25, 16, 9, 4, 1]", "[1, 4, 9, 16, 25]"], "correct": 3, "explain": "[n ** 2 for n in numbers] — компактная запись цикла, которая для каждого n вычисляет n**2 и собирает результаты в список."}, {"q": "В чём преимущество генератора списка перед обычным циклом с <code class='inline'>append()</code>?", "options": ["Генератор списка может работать без условия if, а обычный цикл — нет.", "Генератор списка нельзя использовать с условием, только с преобразованием.", "Генератор списка короче и читается как одна мысль («собрать X для каждого Y, если Z»), хотя результат тот же, что и при цикле с append().", "Это два совершенно разных языка внутри Python, дающих разные типы результата."], "correct": 2, "explain": "Результат идентичен, но запись компактнее и читается как единая мысль."}, {"q": "Как переписать обычным циклом: <code class='inline'>result = [x for x in range(5) if x % 2 == 0]</code>?", "options": ["result = []\nfor x in range(5):\n    if x % 2 == 0:\n        result.append(x)", "result = []\nfor x in range(5):\n    result.append(x)\n    if x % 2 == 0:\n        break", "result = []\nfor x in range(5):\n    if x % 2 != 0:\n        result.append(x)", "result = [x for x in range(5)]\nresult.remove(x % 2 == 0)"], "correct": 0, "explain": "Условие if из генератора переносится в тело цикла перед append(), сохраняя ту же логику фильтрации."}], "tasks": [{"text": "Дан список слов <code class='inline'>words = ['кот', 'слон', 'еж', 'жираф', 'кит']</code>. С помощью генератора списка выбери слова длиннее 3 символов и переведи их в верхний регистр.", "expected": "['СЛОН', 'ЖИРАФ']"}, {"text": "С помощью генератора списка построй список чисел от 1 до 20 включительно, которые делятся и на 2, и на 3 одновременно.", "expected": "[6, 12, 18]"}]}], "test2": [{"num": 1, "title": "Переменные и типы данных", "theory": [{"q": "Что выведет код?<pre>x = \"42\"\nprint(type(x))</pre>", "options": ["<class 'str'>", "<class 'bool'>", "<class 'float'>", "<class 'int'>"], "correct": 0, "explain": "Функция <code class='inline'>type()</code> возвращает класс значения переменной. Здесь это <code class='inline'><class 'str'></code>."}, {"q": "Что выведет <code class='inline'>print(int(3.2))</code>?", "options": ["3.2", "3", "0", "Ошибка: ValueError"], "correct": 1, "explain": "<code class='inline'>int()</code> при преобразовании float не округляет, а отбрасывает дробную часть (округление к нулю), поэтому 3.2 → 3, а не округлённое значение."}, {"q": "Что выведет код?<pre>print(str(12) + str(7))</pre>", "options": ["19", "712", "Ошибка: TypeError", "127"], "correct": 3, "explain": "Оба числа превращены в строки функцией <code class='inline'>str()</code>, а оператор <code class='inline'>+</code> между строками склеивает их (конкатенация), а не складывает как числа: получится \"127\", а не 19."}], "tasks": [{"text": "Возраст хранится как строка: <code class='inline'>age_str = \"23\"</code>. Преобразуй в число и выведи результат после прибавления 7.", "expected": "30"}, {"text": "Два результата теста — строки: <code class='inline'>score1 = \"60\"</code>, <code class='inline'>score2 = \"75\"</code>. Посчитай средний балл и выведи его с одним знаком после запятой через f-строку (формат: «Средний балл: X.X»).", "expected": "Средний балл: 67.5"}]}, {"num": 2, "title": "Условия: if / elif / else", "theory": [{"q": "Что выведет код?<pre>a, b = 3, 5\nprint(a == b, a != b, a < b)</pre>", "options": ["False True True", "True True False", "True False True", "True True True"], "correct": 0, "explain": "Операторы сравнения (==, !=, <) всегда возвращают True или False, а не число."}, {"q": "В чём разница между цепочкой <code class='inline'>if / elif / else</code> и несколькими отдельными <code class='inline'>if</code> подряд?", "options": ["Python выполнит только последний блок цепочки, независимо от условий.", "Выполнятся все блоки, условия которых истинны, даже если их несколько.", "elif работает только если перед ним нет ни одного if.", "Выполнится только первый истинный блок, остальные elif/else проверяться не будут."], "correct": 3, "explain": "В цепочке if/elif/else выполнится только первый блок, условие которого оказалось истинным — остальные не проверяются. А отдельные if проверяются независимо, и сработать может несколько сразу."}, {"q": "Что выведет код?<pre>p, q = False, False\nprint(p and q, p or q)</pre>", "options": ["True True", "True False", "False False", "False True"], "correct": 2, "explain": "and возвращает True только если оба значения истинны, or — если истинно хотя бы одно."}], "tasks": [{"text": "У ученика результат теста <code class='inline'>score = 92</code>. Шкала: 90+ → \"A\", 75–89 → \"B\", 60–74 → \"C\", меньше 60 → \"F\". Выведи букву оценки.", "expected": "A"}, {"text": "Даны стороны треугольника <code class='inline'>a, b, c = 5, 5, 8</code>. Выведи тип: \"равносторонний\" (все стороны равны), \"равнобедренный\" (любые две равны) или \"произвольный\".", "expected": "равнобедренный"}]}, {"num": 3, "title": "Циклы: for и while", "theory": [{"q": "Что выведет код?<pre>for i in range(2, 10, 2):\n    print(i, end=\" \")</pre>", "options": ["2 4 6 8 10", "2 4 6 8", "3 5 7 9", "Ошибка: TypeError"], "correct": 1, "explain": "range(start, stop, step) генерирует числа от start до stop не включая stop, с заданным шагом."}, {"q": "Когда лучше использовать <code class='inline'>for</code>, а когда <code class='inline'>while</code>?", "options": ["for всегда быстрее while, поэтому while почти не используют.", "while можно использовать только с числами, а for — только со списками.", "Разницы нет, это два равноценных способа написать один и тот же цикл в любой ситуации.", "for — когда известно количество повторений или есть последовательность; while — когда условие остановки не привязано к конкретному числу шагов."], "correct": 3, "explain": "for используют для известного числа повторений или перебора последовательности; while — когда число шагов вперёд не известно и зависит от условия."}, {"q": "Сколько раз выполнится тело цикла?<pre>count = 0\nsteps = 0\nwhile count < 5:\n    count += 1\n    steps += 1\nprint(steps)</pre>", "options": ["4", "Ошибка: TypeError", "5", "6"], "correct": 2, "explain": "Тело выполнится 5 раз — ровно столько, сколько нужно, чтобы count дошёл от 0 до 5."}], "tasks": [{"text": "Напиши код, который вычисляет сумму всех чисел от 1 до 20 включительно с помощью цикла, и выводит результат.", "expected": "210"}, {"text": "Напиши код, который выводит первые 10 чисел последовательности Фибоначчи (0, 1, 1, 2, 3, ...) через пробел, используя <code class='inline'>while</code>.", "expected": "0 1 1 2 3 5 8 13 21 34"}]}, {"num": 4, "title": "Списки (list)", "theory": [{"q": "Что выведет код?<pre>data = [3, 6, 9, 12]\nprint(data[:2])</pre>", "options": ["[12, 9]", "[3, 6, 9, 12]", "[3, 6]", "[9, 12]"], "correct": 2, "explain": "Срез [:2] возвращает новый список с элементами по указанным индексам, не включая правую границу."}, {"q": "Чем отличается <code class='inline'>append()</code> от <code class='inline'>extend()</code>?", "options": ["append(x) добавляет x как один элемент целиком; extend(iterable) добавляет каждый элемент последовательности по отдельности.", "extend можно использовать только со строками, а append — только с числами.", "append добавляет элемент в начало списка, а extend — в конец.", "Это два названия одного и того же метода, они работают идентично в любой ситуации."], "correct": 0, "explain": "append(x) добавляет x целиком как один элемент (даже список — вложенным). extend(iterable) добавляет каждый элемент по отдельности."}, {"q": "Что выведет код?<pre>numbers = [2, 8]\nnumbers.append(100)\nnumbers.insert(0, -1)\nprint(numbers)</pre>", "options": ["[100, 2, 8, -1]", "Ошибка: TypeError", "[2, 8, 100, -1]", "[-1, 2, 8, 100]"], "correct": 3, "explain": "append() добавляет элемент в конец, а insert(0, x) вставляет элемент на конкретную позицию — здесь в начало."}], "tasks": [{"text": "Дан список оценок <code class='inline'>grades = [50, 95, 60, 80]</code>. Выведи максимальную, минимальную оценку и средний балл (через пробел, в одной строке, как делает print с тремя аргументами).", "expected": "95 50 71.25"}, {"text": "Дан список чисел <code class='inline'>numbers = [12, 4, 19, 2, 33]</code>. Выведи список только чётных чисел (отдельной строкой), а затем — сколько их.", "expected": "[12, 4, 2]\n3"}]}, {"num": 5, "title": "Функции", "theory": [{"q": "Что выведет код?<pre>def greet(name=\"Друг\"):\n    return f\"Хей, {name}!\"\n\nprint(greet())\nprint(greet(\"Алия\"))</pre>", "options": ["Ошибка: greet() missing 1 required positional argument", "Хей, Алия!\nХей, Алия!", "Хей, Друг!\nХей, Алия!", "Хей, Друг!\nХей, Друг!"], "correct": 2, "explain": "Если аргумент не передан, используется значение по умолчанию (\"Друг\"), а если передан — оно подставляется вместо него."}, {"q": "В чём разница между <code class='inline'>return</code> и <code class='inline'>print()</code> внутри функции?", "options": ["return можно использовать только в функциях без параметров.", "print завершает выполнение функции, а return просто выводит текст на экран.", "print() просто выводит текст и не передаёт значение дальше в код; return передаёт значение туда, откуда функция была вызвана.", "Это одно и то же — return и print можно использовать взаимозаменяемо в любом случае."], "correct": 2, "explain": "print() выводит текст на экран и не передаёт значение дальше. return завершает функцию и передаёт значение туда, откуда она была вызвана."}, {"q": "Что произойдёт, если в функции нет оператора <code class='inline'>return</code>, и мы выводим результат её вызова?", "options": ["Функция вернёт None — это значение Python возвращает по умолчанию, если в функции явно не указано, что возвращать.", "Функция вернёт 0, как и любая другая функция без явного return.", "Программа завершится с ошибкой, потому что return обязателен.", "Функция вернёт последнее вычисленное внутри неё значение, даже без return."], "correct": 0, "explain": "Без явного return функция возвращает None — специальное значение «ничего» в Python."}], "tasks": [{"text": "Напиши функцию <code class='inline'>total_cost(price, quantity, discount_from=4)</code>, которая считает стоимость покупки и применяет скидку 10%, если количество ≥ <code class='inline'>discount_from</code>. Вызови с <code class='inline'>price=1200, quantity=5</code> и выведи результат.", "expected": "5400.0"}, {"text": "Напиши функцию <code class='inline'>stats(numbers)</code>, возвращающую сумму, максимум и минимум списка, и функцию <code class='inline'>describe(numbers)</code>, которая вызывает <code class='inline'>stats</code> и возвращает строку с этими значениями в формате «Сумма: X, макс: Y, мин: Z». Вызови <code class='inline'>describe([1, 1, 2, 3, 5, 8])</code> и выведи результат.", "expected": "Сумма: 20, макс: 8, мин: 1"}]}, {"num": 6, "title": "Строки и методы строк", "theory": [{"q": "Что выведет код?<pre>s = \"  Изучаю Программирование  \"\nprint(s.strip().lower())</pre>", "options": ["Изучаю Программирование", "  изучаю программирование  ", "изучаю программирование", "ИЗУЧАЮ ПРОГРАММИРОВАНИЕ"], "correct": 2, "explain": "strip() убирает пробелы по краям строки, а lower() переводит буквы в нижний регистр."}, {"q": "Можно ли изменить отдельный символ в строке через индекс, например <code class='inline'>s[0] = \"A\"</code>?", "options": ["Нет — строки неизменяемы (immutable), любая «модификация» создаёт новую строку, а не меняет исходную.", "Можно, если строка была создана через одинарные кавычки, а не двойные.", "Можно, но только для первого символа строки, остальные менять нельзя.", "Да, через s[0] = \"A\" можно заменить любой символ строки напрямую."], "correct": 0, "explain": "Строки в Python неизменяемы. Любая операция «изменения» строки создаёт новую строку."}, {"q": "Что выведет код?<pre>words = ['кот', 'пёс', 'хомяк']\nresult = \"-\".join(words)\nprint(result)\nprint(result.split(\"-\"))</pre>", "options": ["Ошибка: AttributeError", "кот пёс хомяк\n['кот', 'пёс', 'хомяк']", "Ошибка: TypeError", "кот-пёс-хомяк\n['кот', 'пёс', 'хомяк']"], "correct": 3, "explain": "join() склеивает список строк через разделитель, а split() делает обратное — разбивает строку на список по разделителю."}], "tasks": [{"text": "Дано предложение <code class='inline'>text = \"Сегодня хорошая погода для прогулки в парке\"</code>. Раздели на слова и выведи количество слов (отдельной строкой), а затем — последнее слово.", "expected": "7\nпарке"}, {"text": "Дано слово <code class='inline'>word = \"разработчик\"</code>. Посчитай и выведи, сколько в нём гласных букв (а, е, ё, и, о, у, ы, э, ю, я), перебирая буквы циклом.", "expected": "4"}]}, {"num": 7, "title": "Словари (dict)", "theory": [{"q": "Что выведет код?<pre>prices = {'молоко': 500, 'хлеб': 180}\nprint(prices.get(\"сыр\", \"нет в наличии\"))</pre>", "options": ["Ошибка: KeyError", "None", "0", "нет в наличии"], "correct": 3, "explain": "Метод .get(key, default) возвращает значение по ключу, а если ключа нет — возвращает default вместо ошибки KeyError."}, {"q": "Когда лучше использовать словарь, а когда список?", "options": ["Список можно использовать только с числами, а словарь — только со строками.", "Разницы нет, это два названия одной и той же структуры данных.", "Словарь всегда быстрее списка, поэтому список почти не используют.", "Список — когда важен порядок и доступ по числовому индексу; словарь — когда у значений есть смысловой ключ и нужен быстрый доступ по нему."], "correct": 3, "explain": "Список — порядок и доступ по индексу. Словарь — доступ по смысловому ключу."}, {"q": "Что произойдёт, если присвоить значение по уже существующему ключу: <code class='inline'>d[\"x\"]=1</code>, потом <code class='inline'>d[\"x\"]=2</code>?", "options": ["Старое значение будет перезаписано новым — каждый ключ в словаре уникален.", "Появится два значения по одному ключу, и оба будут доступны одновременно.", "Словарь автоматически переименует второй ключ, добавив к нему цифру.", "Python вызовет ошибку KeyError при попытке присвоить значение уже существующему ключу."], "correct": 0, "explain": "Ключи в словаре уникальны — повторное присваивание просто заменяет старое значение."}], "tasks": [{"text": "Дан словарь <code class='inline'>scores = {'Нурлан': 60, 'Гульнара': 99, 'Тимур': 81}</code>. Перебери его и выведи построчно: имя, дефис, балл (например, «Имя - 88»).", "expected": "Нурлан - 60\nГульнара - 99\nТимур - 81"}, {"text": "Дан список <code class='inline'>words = ['солнце', 'дождь', 'солнце', 'снег', 'солнце']</code>. Посчитай, сколько раз встречается каждое слово, используя словарь как счётчик, и выведи итоговый словарь.", "expected": "{'солнце': 3, 'дождь': 1, 'снег': 1}"}]}, {"num": 8, "title": "Множества (set)", "theory": [{"q": "Что выведет код?<pre>a = set([10, 20, 30])\nb = set([20, 30, 40])\nprint(a & b)\nprint(a | b)\nprint(a - b)</pre>", "options": ["{20, 30}\n{20, 40, 10, 30}\n{10}", "{10}\n{20, 40, 10, 30}\n{20, 30}", "{20, 30}\n{20, 40, 10, 30}\n{40}", "{20, 40, 10, 30}\n{20, 30}\n{10}"], "correct": 0, "explain": "& — пересечение, | — объединение, - — разность (элементы первого множества, которых нет во втором)."}, {"q": "Почему в множестве (set) не бывает повторов и нет гарантированного порядка?", "options": ["Set удаляет дубликаты только если они стоят подряд друг за другом.", "Set всегда сортирует элементы по возрастанию, поэтому порядок предсказуем.", "Set работает как список, просто Python переименовал тип для удобства.", "Set основан на хеш-таблице: дубликаты при добавлении просто не добавляются, а элементы хранятся по хешу, а не по порядку вставки."], "correct": 3, "explain": "Set основан на хеш-таблице — дубликаты не добавляются, а порядок не привязан к вставке."}, {"q": "Что выведет <code class='inline'>print(len(set([1, 1, 2, 2, 3])))</code>?", "options": ["3 — при преобразовании списка в множество дубликаты убираются, остаются только уникальные значения.", "5 — set сохраняет исходную длину списка.", "2 — set оставляет только два первых уникальных элемента.", "Ошибка: TypeError."], "correct": 0, "explain": "Дубликаты убираются, остаются 1, 2, 3 — то есть 3 уникальных значения."}], "tasks": [{"text": "Дан список с повторами <code class='inline'>numbers = [10, 10, 20, 30, 30, 30]</code>. Выведи отсортированный список уникальных значений (<code class='inline'>sorted(...)</code>), а затем — их количество.", "expected": "[10, 20, 30]\n3"}, {"text": "Группа A: <code class='inline'>group_a = ['Нурлан', 'Тимур']</code>, группа B: <code class='inline'>group_b = ['Тимур', 'Гульнара', 'Нурлан']</code>. Выведи отсортированный список тех, кто состоит в обеих группах, а затем — отсортированный список тех, кто состоит только в группе A.", "expected": "['Нурлан', 'Тимур']\n[]"}]}, {"num": 9, "title": "Кортежи (tuple)", "theory": [{"q": "Что выведет код?<pre>point = (10, -2)\nx, y = point\nprint(x + y)</pre>", "options": ["8", "10", "-20", "-2"], "correct": 0, "explain": "Кортеж распаковывается в переменные x, y по порядку, поэтому x=10, y=-2, и x+y=8."}, {"q": "Почему кортеж (tuple) называют неизменяемым, и когда это удобно?", "options": ["Кортежи на самом деле изменяемы, просто синтаксис изменения отличается от списков.", "Кортеж — это просто список, но с круглыми скобками вместо квадратных, никакой реальной разницы нет.", "Кортежи нужны только для хранения чисел, со строками они не работают.", "После создания кортеж нельзя изменить — это защищает данные от случайной модификации, и кортежи можно использовать как ключи словаря."], "correct": 3, "explain": "Кортеж нельзя изменить после создания — это защищает данные и позволяет использовать его как ключ словаря."}, {"q": "Что выведет <code class='inline'>print((1, 2, 3)[1:])</code>?", "options": ["(2, 3) — срез возвращает кортеж с элементами по тем же правилам, что и срезы списков.", "[2, 3] — срез превращает кортеж в список.", "Ошибка: TypeError, кортежи не поддерживают срезы.", "(1, 2, 3) — срез возвращает исходный кортеж без изменений."], "correct": 0, "explain": "Срезы у кортежей работают как у списков, но результат остаётся кортежем."}], "tasks": [{"text": "Дан список кортежей <code class='inline'>students = [('Нурлан', 15, '8C'), ('Гульнара', 17, '10B'), ('Тимур', 16, '9A')]</code> (имя, возраст, группа). Выведи для каждого студента строку вида «Имя, возраст лет, группа Группа».", "expected": "Нурлан, 15 лет, группа 8C\nГульнара, 17 лет, группа 10B\nТимур, 16 лет, группа 9A"}, {"text": "Дан список точек-кортежей <code class='inline'>points = [(2, 2), (5, 0), (0, 5)]</code>. Посчитай расстояние от начала координат до каждой точки (<code class='inline'>(x**2+y**2)**0.5</code>), выведи список расстояний, а затем — самое большое.", "expected": "[2.8284271247461903, 5.0, 5.0]\n5.0"}]}, {"num": 10, "title": "Генераторы списков", "theory": [{"q": "Что выведет код?<pre>numbers = [2, 4, 6, 8]\nsquares = [n ** 2 for n in numbers]\nprint(squares)</pre>", "options": ["[4, 8, 12, 16]", "[2, 4, 6, 8]", "[4, 16, 36, 64]", "[64, 36, 16, 4]"], "correct": 2, "explain": "[n ** 2 for n in numbers] — компактная запись цикла, которая для каждого n вычисляет n**2 и собирает результаты в список."}, {"q": "В чём преимущество генератора списка перед обычным циклом с <code class='inline'>append()</code>?", "options": ["Генератор списка короче и читается как одна мысль («собрать X для каждого Y, если Z»), хотя результат тот же, что и при цикле с append().", "Генератор списка может работать без условия if, а обычный цикл — нет.", "Генератор списка нельзя использовать с условием, только с преобразованием.", "Это два совершенно разных языка внутри Python, дающих разные типы результата."], "correct": 0, "explain": "Результат идентичен, но запись компактнее и читается как единая мысль."}, {"q": "Как переписать обычным циклом: <code class='inline'>result = [x for x in range(5) if x % 2 == 0]</code>?", "options": ["result = []\nfor x in range(5):\n    result.append(x)\n    if x % 2 == 0:\n        break", "result = []\nfor x in range(5):\n    if x % 2 != 0:\n        result.append(x)", "result = []\nfor x in range(5):\n    if x % 2 == 0:\n        result.append(x)", "result = [x for x in range(5)]\nresult.remove(x % 2 == 0)"], "correct": 2, "explain": "Условие if из генератора переносится в тело цикла перед append(), сохраняя ту же логику фильтрации."}], "tasks": [{"text": "Дан список слов <code class='inline'>words = ['дом', 'машина', 'сад', 'ключ', 'облако']</code>. С помощью генератора списка выбери слова длиннее 3 символов и переведи их в верхний регистр.", "expected": "['МАШИНА', 'КЛЮЧ', 'ОБЛАКО']"}, {"text": "С помощью генератора списка построй список чисел от 1 до 15 включительно, которые делятся и на 2, и на 3 одновременно.", "expected": "[6, 12]"}]}]};
+const STORAGE_KEY = "pyExamState_v2";
+
+let state = null;
+let pyodidePromise = null;
+
+function $(id) { return document.getElementById(id); }
+function escapeHtml(s) {
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) { return null; }
+}
+function saveState() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {}
+}
+
+function buildSteps(testKey) {
+  const topics = QUIZ_DATA[testKey];
+  const steps = [];
+  topics.forEach(topic => {
+    topic.theory.forEach((q, i) => steps.push({ type: "theory", topicNum: topic.num, topicTitle: topic.title, data: q }));
+    topic.tasks.forEach((t, i) => steps.push({ type: "task", topicNum: topic.num, topicTitle: topic.title, data: t }));
+  });
+  return steps;
+}
+
+function init() {
+  state = loadState();
+  const app = $("app");
+  if (state && state.finished) {
+    renderFinished();
+  } else if (state && state.name) {
+    renderStep();
+  } else {
+    renderNameScreen();
+  }
+}
+
+function renderNameScreen() {
+  $("app").innerHTML = `
+    <div class="center-card">
+      <h1>Экзамен по Python</h1>
+      <p>Темы 1–10. По каждой теме: 3 вопроса по теории и 2 практические задачи. Вариант теста (1 или 2) выбирается случайно.</p>
+      <input id="nameInput" type="text" placeholder="Имя и фамилия" autocomplete="off">
+      <button class="btn btn-primary" style="width:100%" onclick="startExam()">Начать тест</button>
+    </div>`;
+  $("nameInput").addEventListener("keydown", e => { if (e.key === "Enter") startExam(); });
+  $("nameInput").focus();
+}
+
+function startExam() {
+  const name = $("nameInput").value.trim();
+  if (!name) { $("nameInput").style.borderColor = "var(--red)"; return; }
+  const testKey = Math.random() < 0.5 ? "test1" : "test2";
+  state = {
+    name, testKey, stepIndex: 0,
+    answered: {},
+    finished: false,
+  };
+  saveState();
+  renderStep();
+}
+
+function currentSteps() { return buildSteps(state.testKey); }
+
+function renderProgress(stepIdx, total, topicNum, topicTitle) {
+  const pct = Math.round((stepIdx / total) * 100);
+  return `
+    <div class="progress-wrap">
+      <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
+      <div class="progress-label"><span>Вопрос ${stepIdx + 1} из ${total}</span><span>${pct}%</span></div>
+    </div>
+    <div class="topic-banner">Тема ${topicNum}. ${escapeHtml(topicTitle)}</div>`;
+}
+
+function renderStep() {
+  const steps = currentSteps();
+  const idx = state.stepIndex;
+  const step = steps[idx];
+  if (step.type === "theory") renderTheoryStep(steps, idx, step);
+  else renderTaskStep(steps, idx, step);
+}
+
+function renderTheoryStep(steps, idx, step) {
+  const already = state.answered[idx];
+  const optsHtml = step.data.options.map((opt, i) => {
+    let cls = "mcq-option";
+    let disabled = "";
+    if (already) {
+      disabled = "disabled";
+      if (i === step.data.correct) cls += " correct";
+      else if (i === already.selected) cls += " incorrect";
+      else cls += " dimmed";
+    }
+    return `<button class="${cls}" ${disabled} onclick="selectAnswer(${idx}, ${i})">${opt}</button>`;
+  }).join("");
+
+  let feedback = "";
+  if (already) {
+    const ok = already.correct;
+    feedback = `<div class="feedback-box ${ok ? "correct" : "incorrect"}">
+      <div class="fb-title">${ok ? "Верно!" : "Неверно."}</div>
+      <div>${step.data.explain}</div>
+    </div>`;
+  }
+
+  $("app").innerHTML = `
+    ${renderProgress(idx, steps.length, step.topicNum, step.topicTitle)}
+    <div class="step-card">
+      <div class="question-text">${step.data.q}</div>
+      ${optsHtml}
+      ${feedback}
+      <div class="btn-row">
+        <button class="btn btn-primary" ${already ? "" : "disabled"} onclick="nextStep()">Далее</button>
+      </div>
+    </div>`;
+}
+
+function selectAnswer(idx, optionIdx) {
+  const steps = currentSteps();
+  const step = steps[idx];
+  const correct = optionIdx === step.data.correct;
+  state.answered[idx] = { selected: optionIdx, correct };
+  saveState();
+  renderStep();
+}
+
+function renderTaskStep(steps, idx, step) {
+  const already = state.answered[idx];
+  const savedCode = already && already.code !== undefined ? already.code : "";
+  let resultHtml = "";
+  if (already && already.checked) {
+    resultHtml = `
+      <div class="feedback-box ${already.correct ? "correct" : "incorrect"}">
+        <div class="fb-title">${already.correct ? "Совпадает с ожидаемым выводом!" : "Вывод не совпадает с ожидаемым."}</div>
+      </div>
+      <div class="output-box">
+        <div class="label">Твой вывод</div>
+        <pre>${escapeHtml(already.output || "(пусто)")}</pre>
+      </div>`;
+  }
+
+  $("app").innerHTML = `
+    ${renderProgress(idx, steps.length, step.topicNum, step.topicTitle)}
+    <div class="step-card">
+      <div class="task-text">${step.data.text}</div>
+      <div class="output-box">
+        <div class="label">Ожидаемый вывод</div>
+        <pre>${escapeHtml(step.data.expected)}</pre>
+      </div>
+      <textarea class="code-editor" id="codeEditor" spellcheck="false" placeholder="# напиши код здесь">${escapeHtml(savedCode)}</textarea>
+      <div class="task-controls">
+        <button class="btn btn-secondary" id="checkBtn" onclick="checkTask(${idx})">Проверить</button>
+        <span class="task-status" id="taskStatus"></span>
+      </div>
+      <div id="taskResult">${resultHtml}</div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="nextStep()">Далее</button>
+      </div>
+    </div>`;
+}
+
+async function ensurePyodide() {
+  if (!pyodidePromise) {
+    $("taskStatus") && ($("taskStatus").textContent = "Загружается Python в браузере...");
+    pyodidePromise = loadPyodide();
+  }
+  return pyodidePromise;
+}
+
+async function runUserCode(code) {
+  const pyodide = await ensurePyodide();
+  pyodide.globals.set("user_code", code);
+  const wrapper = `
+import sys, io
+buf = io.StringIO()
+old_stdout = sys.stdout
+sys.stdout = buf
+try:
+    exec(user_code, {})
+except Exception as e:
+    print(f"Ошибка: {e}")
+finally:
+    sys.stdout = old_stdout
+result = buf.getvalue()
+`;
+  await pyodide.runPythonAsync(wrapper);
+  return pyodide.globals.get("result");
+}
+
+async function checkTask(idx) {
+  const code = $("codeEditor").value;
+  const statusEl = $("taskStatus");
+  const btn = $("checkBtn");
+  btn.disabled = true;
+  statusEl.textContent = "Выполняется...";
+  try {
+    const rawOutput = await runUserCode(code);
+    const output = (rawOutput || "").replace(/\n$/, "");
+    const steps = currentSteps();
+    const expected = steps[idx].data.expected;
+    const correct = output.trim() === expected.trim();
+    state.answered[idx] = { code, output, correct, checked: true };
+    saveState();
+    statusEl.textContent = "";
+    renderStep();
+  } catch (e) {
+    statusEl.textContent = "Ошибка запуска: " + e;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function nextStep() {
+  const steps = currentSteps();
+  if (state.stepIndex < steps.length - 1) {
+    if (steps[state.stepIndex].type === "task") {
+      const codeEl = $("codeEditor");
+      if (codeEl && !(state.answered[state.stepIndex] && state.answered[state.stepIndex].checked)) {
+        state.answered[state.stepIndex] = { code: codeEl.value, checked: false, correct: false };
+      }
+    }
+    state.stepIndex++;
+    saveState();
+    renderStep();
+  } else {
+    finishExam();
+  }
+}
+
+function finishExam() {
+  const steps = currentSteps();
+  let theoryCorrect = 0, theoryTotal = 0, taskCorrect = 0, taskTotal = 0;
+  steps.forEach((s, idx) => {
+    const a = state.answered[idx];
+    if (s.type === "theory") {
+      theoryTotal++;
+      if (a && a.correct) theoryCorrect++;
+    } else {
+      taskTotal++;
+      if (a && a.correct) taskCorrect++;
+    }
+  });
+  state.theoryCorrect = theoryCorrect;
+  state.theoryTotal = theoryTotal;
+  state.taskCorrect = taskCorrect;
+  state.taskTotal = taskTotal;
+  state.finished = true;
+  saveState();
+  submitResult();
+  renderFinished();
+}
+
+function submitResult() {
+  if (!window.FIREBASE_CONFIGURED) { console.warn("Firebase не настроен — результат сохранён только локально."); return; }
+  try {
+    const db = firebase.firestore();
+    db.collection("examResults").add({
+      name: state.name,
+      test: state.testKey,
+      theoryCorrect: state.theoryCorrect,
+      theoryTotal: state.theoryTotal,
+      taskCorrect: state.taskCorrect,
+      taskTotal: state.taskTotal,
+      totalCorrect: state.theoryCorrect + state.taskCorrect,
+      totalMax: state.theoryTotal + state.taskTotal,
+      timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    }).catch(err => console.warn("Firebase write failed:", err));
+  } catch (e) { console.warn("Firebase write failed:", e); }
+}
+
+function renderFinished() {
+  const total = state.theoryCorrect + state.taskCorrect;
+  const max = state.theoryTotal + state.taskTotal;
+  const pct = Math.round((total / max) * 100);
+  $("app").innerHTML = `
+    <div class="score-hero">
+      <div class="big">${total} / ${max}</div>
+      <div class="sub">${state.name} · вариант ${state.testKey === "test1" ? "1" : "2"} · ${pct}%</div>
+    </div>
+    <div class="score-breakdown">
+      <div class="cell"><div class="num">${state.theoryCorrect} / ${state.theoryTotal}</div><div class="lab">Теория</div></div>
+      <div class="cell"><div class="num">${state.taskCorrect} / ${state.taskTotal}</div><div class="lab">Практика</div></div>
+    </div>
+    <p style="text-align:center;color:var(--muted);font-size:13.5px;">Результат сохранён. Повторное прохождение с этого устройства недоступно — обновление страницы покажет тот же результат.</p>`;
+}
+
+init();
+</script>
+</body>
+</html>
